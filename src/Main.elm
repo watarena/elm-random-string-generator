@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Browser
 import Html exposing (Html, button, div, input, text)
@@ -14,9 +14,13 @@ import Platform.Cmd as Cmd
 import Random
 import Html.Attributes exposing (checked)
 
+-- PORTS
+port copyToClipBoard: String -> Cmd msg
+port copyToClipBoardResult: (String -> msg) -> Sub msg
+
 -- MAIN
 main : Program () Model Msg
-main = Browser.element { init = init, update = update, view = view, subscriptions = \_ -> Sub.none }
+main = Browser.element { init = init, update = update, view = view, subscriptions = subscriptions }
 
 -- MODEL
 type alias Model =
@@ -28,13 +32,11 @@ type alias Model =
     custom: Bool,
     customContent: String,
     randomStringLength: Int,
-    randomString: String
+    randomString: String,
+    copyToClipBoardResultMessage: String
   }
 
-modelToString : Model -> String
-modelToString model = Debug.toString model
-
-init : flags -> (Model, Cmd Msg )
+init : flags -> (Model, Cmd Msg)
 init = \_ ->
   (
     {
@@ -45,7 +47,8 @@ init = \_ ->
       custom = False,
       customContent = "",
       randomStringLength = 16,
-      randomString = ""
+      randomString = "",
+      copyToClipBoardResultMessage = ""
     },
     Cmd.none
   )
@@ -73,6 +76,8 @@ type Msg =
   | ChangeLength(String)
   | GenerateRandomString
   | RandomString(String)
+  | CopyToClipBoard(String)
+  | CopyToClipBoardResult(String)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -87,6 +92,15 @@ update msg model =
       let generator = randomStringGenerator (getAvailableChars model) model.randomStringLength in
       (model, Random.generate RandomString generator)
     RandomString s -> ({model | randomString = s}, Cmd.none)
+    CopyToClipBoard text -> ({model | copyToClipBoardResultMessage = ""}, copyToClipBoard text)
+    CopyToClipBoardResult text ->
+      let message = if text == "" then "Copied!" else "Failed to copy: " ++ text
+      in ({model | copyToClipBoardResultMessage = message}, Cmd.none)
+
+-- SUBSCRIPTIONS
+
+subscriptions: Model -> Sub Msg
+subscriptions _ = copyToClipBoardResult CopyToClipBoardResult
 
 -- VIEW
 
@@ -106,6 +120,9 @@ view model =
       ],
       div [] [ text <| "Available characters: " ++ getAvailableChars model ],
       button [onClick GenerateRandomString] [ text "Generate!" ],
+      div [
+        style "visibility" (if String.length model.copyToClipBoardResultMessage > 0 then "visible" else "hidden")
+      ] [ text model.copyToClipBoardResultMessage ],
       div [] [
         div [
           style "visibility" (if String.length model.randomString > 0 then "visible" else "hidden"),
@@ -114,7 +131,10 @@ view model =
           style "display" "inline-block",
           style "padding" "3px 10px",
           style "margin" "5px 0px"
-        ] [ text model.randomString ]
+        ] [ 
+          text model.randomString,
+          button [onClick <| CopyToClipBoard model.randomString, style "margin-left" "10px"] [ text "copy" ]
+        ]
       ]
     ]
 
