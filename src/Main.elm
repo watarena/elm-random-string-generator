@@ -1,18 +1,11 @@
 port module Main exposing (..)
 
 import Browser
-import Html exposing (Html, button, div, input, text)
-import Html.Attributes exposing (type_)
-import Html.Events exposing (onClick, onCheck)
-import Html exposing (label)
-import Html.Attributes exposing (id)
-import Html.Attributes exposing (for)
-import Html.Attributes exposing (style)
-import Html.Attributes exposing (value)
-import Html.Events exposing (onInput)
+import Html exposing (Html, button, div, input, label, text)
+import Html.Attributes exposing (checked, for, id, style, type_, value)
+import Html.Events exposing (onCheck, onClick, onInput)
 import Platform.Cmd as Cmd
 import Random
-import Html.Attributes exposing (checked)
 
 -- PORTS
 port copyToClipBoard: String -> Cmd msg
